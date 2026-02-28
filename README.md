@@ -140,7 +140,7 @@ global:
 ## 项目结构
 
 ```
-harmony-docs-rag/
+multi-rag-platform/
 ├── api/                    # FastAPI 服务
 │   ├── routes/            # API 路由
 │   │   ├── libraries.py   # 资料库管理
