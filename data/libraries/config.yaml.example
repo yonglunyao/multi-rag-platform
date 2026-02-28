@@ -1,0 +1,75 @@
+# 多资料库 RAG 平台配置文件
+#
+# 说明：
+# - libraries: 定义各个资料库的配置
+# - global: 全局设置
+
+# 资料库配置
+libraries:
+  # HarmonyOS 应用开发文档
+  harmonyos:
+    id: harmonyos
+    name: "HarmonyOS应用开发文档"
+    type: harmony_os           # 资料库类型: harmony_os, generic_md, generic_pdf, custom
+    enabled: true              # 是否启用
+    source_path: "/home/mind/workspace/harmonyos/docs/zh-cn/application-dev"
+    collection_name: "lib_harmonyos"  # ChromaDB 集合名称（可选，默认为 lib_{id}）
+
+    # 嵌入模型配置
+    embedding_config:
+      model_name: "BAAI/bge-base-zh-v1.5"
+      device: "cpu"            # cpu 或 cuda
+      dimension: 768
+      batch_size: 32
+
+    # 文档分块配置
+    chunking_config:
+      chunk_size: 1200
+      chunk_overlap: 200
+      separators: ["\n\n", "\n", "。", "！", "？", "；", " ", ""]
+
+    # 数据存储路径（可选，默认为 ./data/libraries/{id}）
+    data_path: "./data/libraries/harmonyos"
+
+    # 自定义元数据（可选）
+    metadata:
+      language: "zh-CN"
+      version: "API 12"
+
+  # 通用 Markdown 文档示例
+  # another_lib:
+  #   id: another_lib
+  #   name: "其他技术文档"
+  #   type: generic_md
+  #   enabled: false           # 禁用此库
+  #   source_path: "/path/to/docs"
+  #   collection_name: "lib_another"
+  #
+  #   embedding_config:
+  #     model_name: "BAAI/bge-base-zh-v1.5"
+  #     device: "cpu"
+  #     dimension: 768
+  #
+  #   chunking_config:
+  #     chunk_size: 1000
+  #     chunk_overlap: 150
+
+# 全局设置
+global:
+  # 默认资料库 ID（查询时未指定 library_id 时使用）
+  default_library: "harmonyos"
+
+  # 最大并发索引数（1 = 串行索引，推荐）
+  max_concurrent_indexing: 1
+
+  # 嵌入设备（cpu 或 cuda）
+  embedding_device: "cpu"
+
+  # 数据根目录
+  data_root: "./data/libraries"
+
+  # 导出目录
+  export_dir: "./data/exports"
+
+  # 向量存储路径
+  vector_store_path: "./data/vectorstore"

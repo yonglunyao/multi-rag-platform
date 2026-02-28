@@ -1,0 +1,86 @@
+global:
+  data_root: ./data/libraries
+  default_library: harmonyos
+  embedding_device: cpu
+  export_dir: ./data/exports
+  max_concurrent_indexing: 1
+  vector_store_path: ./data/vectorstore
+libraries:
+  harmonyos:
+    chunk_count: 0
+    chunking_config:
+      chunk_overlap: 200
+      chunk_size: 1200
+      separators:
+      - '
+
+
+        '
+      - '
+
+        '
+      - 。
+      - ！
+      - ？
+      - ；
+      - ' '
+      - ''
+    collection_name: lib_harmonyos
+    created_at: null
+    data_path: ./data/libraries/harmonyos
+    document_count: 0
+    embedding_config:
+      batch_size: 32
+      device: cpu
+      dimension: 512
+      model_name: BAAI/bge-small-zh-v1.5
+    enabled: true
+    id: harmonyos
+    last_indexed: null
+    metadata:
+      language: zh-CN
+      version: API 12
+    name: HarmonyOS应用开发文档
+    source_path: /home/mind/workspace/harmonyos/docs/zh-cn/application-dev
+    status: ready
+    type: harmony_os
+  harmonyos_full:
+    chunk_count: 85880
+    chunking_config:
+      chunk_overlap: 200
+      chunk_size: 1200
+      separators:
+      - '
+
+
+        '
+      - '
+
+        '
+      - 。
+      - ！
+      - ？
+      - ；
+      - ' '
+      - ''
+    collection_name: lib_harmonyos_full
+    created_at: null
+    data_path: ./data/libraries/harmonyos_full
+    document_count: 9693
+    embedding_config:
+      batch_size: 32
+      device: cpu
+      dimension: 512
+      model_name: BAAI/bge-small-zh-v1.5
+    enabled: true
+    id: harmonyos_full
+    last_indexed: '2026-02-28T11:26:29.987120'
+    metadata:
+      doc_count: ~9700
+      language: zh-CN
+      source: full-clawer
+      version: Full
+    name: HarmonyOS完整文档
+    source_path: /home/mind/workspace/harmonyos/harmonyos-docs-full-clawer
+    status: ready
+    type: generic_md

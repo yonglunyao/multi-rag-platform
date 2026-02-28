@@ -1,0 +1,43 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 虚拟环境
+venv/
+env/
+ENV/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 临时文件
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# 测试
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 开发脚本
+diagnose_mcp.sh
+start-mcp-remote.sh
+
+# 文档（保留 README）
+*.md
+!README.md
+
+# 其他
+.git/
+.gitignore
+RAG_IMPROVEMENT_PLAN.md

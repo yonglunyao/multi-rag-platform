@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # RAG API 服务
+  rag-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: multilib-rag-api
+    # 使用 host 网络模式以访问宿主机的 Ollama
+    network_mode: host
+    volumes:
+      # 挂载文档目录（只读）- HarmonyOS 文档
+      - /home/mind/workspace/harmonyos/docs/zh-cn/application-dev:/docs:ro
+      # 挂载数据目录（持久化）
+      - ./data:/app/data
+      # 挂载环境配置
+      - ./.env:/app/.env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - EMBEDDING_DEVICE=cpu
+      - LIBRARIES_CONFIG_PATH=/app/data/libraries/config.yaml
+      - DEFAULT_LIBRARY=harmonyos
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MCP SSE 服务
+  mcp-sse:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: multilib-mcp-sse
+    # 使用 host 网络模式
+    network_mode: host
+    volumes:
+      # 共享数据目录
+      - ./data:/app/data
+      # 挂载环境配置
+      - ./.env:/app/.env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8001
+      - RAG_API_BASE_URL=http://localhost:8000/api/v1
+    # 启动 MCP SSE 服务器
+    command: ["python", "mcp_server_sse.py"]
+    depends_on:
+      rag-api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
