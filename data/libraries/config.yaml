@@ -1,6 +1,6 @@
 global:
   data_root: ./data/libraries
-  default_library: harmonyos
+  default_library: harmonyos_full
   embedding_device: cpu
   export_dir: ./data/exports
   max_concurrent_indexing: 1
@@ -34,13 +34,13 @@ libraries:
       device: cpu
       dimension: 512
       model_name: BAAI/bge-small-zh-v1.5
-    enabled: true
+    enabled: false
     id: harmonyos
     last_indexed: null
     metadata:
       language: zh-CN
       version: API 12
-    name: HarmonyOS应用开发文档
+    name: HarmonyOS应用开发文档（已废弃）
     source_path: /home/mind/workspace/harmonyos/docs/zh-cn/application-dev
     status: ready
     type: harmony_os
