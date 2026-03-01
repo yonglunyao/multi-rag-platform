@@ -27,8 +27,10 @@ env/
 data/processed/
 data/vectorstore/
 data/documents/
+data/exports/
 *.db
 *.sqlite
+permission_index.json
 
 # Models
 models/
