@@ -18,7 +18,7 @@ from loguru import logger
 import uvicorn
 
 # RAG 服务配置
-RAG_API_BASE_URL = "http://localhost:8001/api/v1"
+RAG_API_BASE_URL = "http://localhost:8000/api/v1"
 RAG_TIMEOUT = 60.0
 
 # 创建 MCP 服务器
@@ -303,7 +303,7 @@ async def handle_messages(request: Request) -> Response:
 async def health_check(request: Request) -> Response:
     """健康检查"""
     return Response(
-        content='{"status": "healthy", "service": "harmonyos-rag-mcp", "version": "1.0.0"}',
+        content='{"status": "healthy", "service": "harmonyos-docs-rag-mcp", "version": "1.0.0"}',
         status_code=200,
         media_type="application/json"
     )

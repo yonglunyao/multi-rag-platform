@@ -117,7 +117,7 @@ async def root():
     """根路径"""
     return {
         "message": "Multi-Library RAG 服务",
-        "version": "2.0.0",
+        "version": "1.0.0",
         "docs": "/docs",
         "features": [
             "多资料库管理",

@@ -101,6 +101,21 @@ async def query(request: QueryRequest, library_id: Optional[str] = Query(None, d
         if not results:
             raise HTTPException(status_code=404, detail="未找到相关文档")
 
+        # 如果禁用LLM，直接返回检索结果
+        if not request.use_llm:
+            sources = [
+                SourceDocument(
+                    file=r['metadata'].get('source', r['metadata'].get('filename', '')),
+                    relevance=r['score'],
+                    category=r['metadata'].get('category', ''),
+                    kit=r['metadata'].get('kit', ''),
+                )
+                for r in results[:request.top_k]
+            ]
+            # 返回简单的检索结果摘要
+            answer = f"检索到 {len(sources)} 条相关文档（禁用LLM生成，仅返回原始检索结果）"
+            return QueryResponse(answer=answer, sources=sources)
+
         if not meets_threshold:
             logger.warning(f"Low confidence for query: {request.query}")
             # 返回低置信度提示，但仍尝试生成回答
@@ -314,3 +329,31 @@ async def query_stream(
     except Exception as e:
         logger.error(f"Stream query error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/cache/stats")
+async def get_cache_stats():
+    """获取缓存统计信息"""
+    from core.cache import get_query_cache
+    cache = get_query_cache()
+    stats = cache.get_stats()
+    return {
+        "cache": {
+            "enabled": stats["max_size"] > 0,
+            "size": stats["size"],
+            "max_size": stats["max_size"],
+            "hits": stats["hits"],
+            "misses": stats["misses"],
+            "hit_rate": round(stats["hit_rate"] * 100, 2),
+            "ttl": stats["ttl"]
+        }
+    }
+
+
+@router.post("/cache/clear")
+async def clear_cache():
+    """清空缓存"""
+    from core.cache import get_query_cache
+    cache = get_query_cache()
+    cache.clear()
+    return {"message": "Cache cleared successfully"}

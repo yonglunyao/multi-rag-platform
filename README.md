@@ -5,12 +5,45 @@
 ## 特性
 
 - 📚 **多资料库管理** - 支持创建、管理多个独立的文档资料库
-- 🔍 **智能检索** - 混合检索（向量 + BM25）+ 查询扩展 + 答案验证
+- 🔍 **智能检索** - 混合检索（向量 + BM25）+ 查询扩展 + 重排序 + 答案验证
 - 🤖 **本地 LLM** - Ollama + Qwen2.5，数据隐私安全
 - 🐳 **Docker 部署** - 一键部署，自动健康检查
-- 🌍 **中文优化** - 针对中文文档优化
+- 🌍 **中文优化** - 针对中文文档优化，支持拼音搜索
 - 📤 **数据导出** - 支持导出训练数据用于迁移
 - 🔌 **MCP 接口** - 支持 Claude Code/Deskop 通过 MCP 调用
+
+## 检索增强功能
+
+### 查询扩展 (Query Expansion)
+自动将用户查询扩展为多维度查询，提高召回率：
+- **同义词扩展**: "权限" → "permission", "许可", "授权"
+- **中英互译**: "创建" → "create", "start", "init"
+- **领域术语**: "mdm" → "企业设备管理", "MDM Kit"
+- **拼音搜索**: 支持 "quanxian" → "权限"
+- **拼写纠错**: "screentimeguard" → "ScreenTimeGuard"
+
+### 元数据增强
+文档解析时自动提取丰富的元数据：
+- API 模块 (@ohos.xxx)
+- 权限名 (ohos.permission.xxx)
+- 接口名（带频率统计）
+- 文档类型（api/guide/glossary）
+- Kit 名称推断
+- 标签生成
+
+### 重排序器 (Reranker)
+支持多种重排序策略提高检索精度：
+- **BM25**: 基于 BM25 算法的精确重排序（推荐，已验证）
+- **ScoreBoost**: 基于关键词匹配的快速重排序
+- **NoOp**: 禁用重排序
+
+| 策略 | 精度 | 延迟 | 状态 |
+|------|------|------|------|
+| **bm25** | ⭐⭐⭐⭐ | ~10ms | ✅ 推荐 |
+| score_boost | ⭐⭐⭐ | ~1ms | ✅ 可用 |
+| none | ⭐⭐ | ~0ms | ✅ 可用 |
+
+> **注意**: CrossEncoder 由于依赖冲突暂时不可用。BM25 已提供高精度检索效果。
 
 ## 快速开始
 
@@ -99,18 +132,25 @@ curl http://localhost:8000/api/v1/health
 ```json
 {
   "mcpServers": {
-    "rag-server": {
+    "harmonyos-docs-rag": {
       "type": "sse",
-      "url": "http://<LINUX_IP>:8001/sse"
+      "url": "http://<SERVER_IP>:8002/sse"
     }
   }
 }
 ```
 
 配置文件位置：
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- Windows: `C:\Users\<username>\AppData\Roaming\Claude\claude_desktop_config.json`
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Linux: `~/.config/Claude/claude_desktop_config.json`
+
+**使用方式：**
+```
+@rag_query 剪贴板 API 用法
+@rag_query 如何申请长时任务权限
+@list_libraries
+```
 
 ## 配置文件
 
@@ -135,6 +175,21 @@ global:
   default_library: "harmonyos"
   max_concurrent_indexing: 1
   embedding_device: "cpu"
+  use_reranker: true         # 是否启用重排序器
+  reranker_type: score_boost # 重排序器类型: score_boost, bm25, none
+```
+
+### 环境变量配置 (.env)
+
+```bash
+# 检索配置
+TOP_K=5                      # 返回结果数量
+CHUNK_SIZE=500               # 文档分块大小
+CHUNK_OVERLAP=50             # 分块重叠大小
+
+# 重排序器配置
+USE_RERANKER=true            # 是否启用重排序器
+RERANKER_TYPE=score_boost    # 重排序器类型: score_boost, bm25, none
 ```
 
 ## 项目结构
@@ -161,6 +216,8 @@ multi-rag-platform/
 │   │   └── generic.py     # 通用解析器
 │   ├── vector_store.py    # 向量存储
 │   ├── retriever.py       # 检索器
+│   ├── query_expander.py  # 查询扩展器
+│   ├── reranker.py        # 重排序器
 │   └── exporter.py        # 数据导出
 ├── data/                   # 数据目录
 │   ├── libraries/         # 资料库配置和数据

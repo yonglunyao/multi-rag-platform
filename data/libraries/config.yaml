@@ -1,10 +1,14 @@
 global:
   data_root: ./data/libraries
   default_library: harmonyos_full
-  embedding_device: cpu
+  embedding_device: cuda
   export_dir: ./data/exports
   max_concurrent_indexing: 1
   vector_store_path: ./data/vectorstore
+  use_reranker: true
+  reranker_type: score_boost
+  enable_cache: true
+  cache_ttl: 3600
 libraries:
   harmonyos:
     chunk_count: 0
@@ -32,8 +36,8 @@ libraries:
     embedding_config:
       batch_size: 32
       device: cpu
-      dimension: 512
-      model_name: BAAI/bge-small-zh-v1.5
+      dimension: 768
+      model_name: BAAI/bge-base-zh-v1.5
     enabled: false
     id: harmonyos
     last_indexed: null
@@ -70,8 +74,8 @@ libraries:
     embedding_config:
       batch_size: 32
       device: cpu
-      dimension: 512
-      model_name: BAAI/bge-small-zh-v1.5
+      dimension: 768
+      model_name: BAAI/bge-base-zh-v1.5
     enabled: true
     id: harmonyos_full
     last_indexed: '2026-02-28T11:26:29.987120'

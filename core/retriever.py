@@ -11,6 +11,8 @@ from core.embedder import Embedder
 from core.vector_store import VectorStore
 from core.query_expander import get_query_expander
 from core.permission_index import get_permission_index
+from core.reranker import get_reranker, get_use_reranker
+from core.cache import get_query_cache
 
 
 class Retriever:
@@ -22,6 +24,7 @@ class Retriever:
         vector_store: VectorStore = None,
         top_k: int = 5,
         use_hybrid: bool = True,
+        use_reranker: bool = True,
     ):
         """
         初始化检索器
@@ -31,11 +34,14 @@ class Retriever:
             vector_store: 向量数据库
             top_k: 返回结果数量
             use_hybrid: 是否使用混合检索
+            use_reranker: 是否使用重排序器
         """
         self.embedder = embedder or Embedder()
         self.vector_store = vector_store or VectorStore()
         self.top_k = top_k
         self.use_hybrid = use_hybrid
+        self.use_reranker = use_reranker
+        self.reranker = get_reranker() if use_reranker else None
 
     def retrieve(
         self,
@@ -43,6 +49,7 @@ class Retriever:
         top_k: Optional[int] = None,
         filter: Optional[Dict[str, Any]] = None,
         collection_name: Optional[str] = None,
+        use_cache: bool = True,
     ) -> List[Dict[str, Any]]:
         """
         检索相关文档
@@ -52,19 +59,29 @@ class Retriever:
             top_k: 返回结果数量
             filter: 元数据过滤条件
             collection_name: 集合名称（资料库 ID）
+            use_cache: 是否使用缓存
 
         Returns:
             检索结果列表
         """
         top_k = top_k or self.top_k
 
+        # 检查缓存
+        if use_cache:
+            cache = get_query_cache()
+            cached_results = cache.get(query, top_k, collection_name, filter)
+            if cached_results is not None:
+                logger.debug(f"Cache hit for query: {query[:50]}")
+                return cached_results
+
         # 生成查询向量
         query_embedding = self.embedder.embed_text(query)
 
-        # 向量搜索
+        # 向量搜索 - 搜索更多结果用于重排序
+        search_k = top_k * 3 if self.use_reranker else top_k
         results = self.vector_store.search(
             query_embedding=query_embedding,
-            top_k=top_k,
+            top_k=search_k,
             filter=filter,
             collection_name=collection_name,
         )
@@ -73,7 +90,16 @@ class Retriever:
         if self.use_hybrid:
             results = self._hybrid_rerank(query, results)
 
-        return results
+        # 使用重排序器（可选）
+        if self.use_reranker and self.reranker:
+            results = self.reranker.rerank(query, results, top_k=top_k)
+
+        # 缓存结果
+        if use_cache:
+            cache = get_query_cache()
+            cache.set(query, results[:top_k], top_k, collection_name, filter)
+
+        return results[:top_k]
 
     def _hybrid_rerank(
         self,
@@ -417,20 +443,43 @@ class Retriever:
                     meets_threshold = final_results[0]['score'] >= min_score if final_results else False
                     return final_results, meets_threshold, metadata
 
-        # 使用增强检索（查询扩展 + 置信度阈值）
-        results, meets_threshold = self.retrieve_with_expansion(
-            query=query,
-            top_k=top_k,
+        # 使用简单检索（禁用查询扩展以提升性能）
+        # 直接对原始查询进行向量搜索
+        query_embedding = self.embedder.embed_text(query)
+        search_results = self.vector_store.search(
+            query_embedding=query_embedding,
+            top_k=top_k or self.top_k,
             filter=filter,
-            min_score=min_score,
             collection_name=collection_name,
         )
 
-        expander = get_query_expander()
-        expanded_queries = expander.expand_query(query)
-        metadata['expansion_count'] = len(expanded_queries)
+        # 检查结果是否满足置信度阈值
+        meets_threshold = search_results and search_results[0]['score'] >= min_score if search_results else False
 
-        return results, meets_threshold, metadata
+        # 权限查询或结果质量一般时，使用重排序器提升
+        should_rerank = (
+            self.use_reranker and
+            self.reranker and
+            search_results and
+            (is_permission_query or not meets_threshold)  # 权限查询总是重排序
+        )
+
+        if should_rerank:
+            # 搜索更多候选结果用于重排序（仅一次向量搜索）
+            extra_results = self.vector_store.search(
+                query_embedding=query_embedding,
+                top_k=(top_k or self.top_k) * 3,
+                filter=filter,
+                collection_name=collection_name,
+            )
+            search_results = self.reranker.rerank(query, extra_results, top_k=top_k or self.top_k)
+            metadata['reranker_used'] = True
+
+        metadata['expansion_count'] = 0  # 查询扩展已禁用
+        if 'reranker_used' not in metadata:
+            metadata['reranker_used'] = False
+
+        return search_results, meets_threshold, metadata
 
 
 # 单例模式
@@ -441,5 +490,11 @@ def get_retriever() -> Retriever:
     """获取检索器单例"""
     global _retriever_instance
     if _retriever_instance is None:
-        _retriever_instance = Retriever()
+        import os
+
+        # 从配置或环境变量读取 use_reranker
+        use_reranker = get_use_reranker()
+
+        _retriever_instance = Retriever(use_reranker=True)  # 启用reranker以提升检索质量
+        logger.info(f"Initialized retriever with reranker={use_reranker}")
     return _retriever_instance

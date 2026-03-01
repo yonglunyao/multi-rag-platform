@@ -83,6 +83,7 @@ class GenericMarkdownParser(BaseParser):
         metadata = {
             'filename': file_path.name,
             'extension': file_path.suffix,
+            'file_size': file_path.stat().st_size if file_path.exists() else 0,
         }
 
         # 提取第一个标题
@@ -102,13 +103,83 @@ class GenericMarkdownParser(BaseParser):
         if code_blocks:
             metadata['code_languages'] = ','.join(list(set(code_blocks)))
 
+        # 提取API模块名（如 @ohos.enterprise.xxx）
+        api_modules = re.findall(r'@ohos\.([\w.]+)', content)
+        if api_modules:
+            # 去重并保留前5个
+            unique_modules = list(set(api_modules))[:5]
+            metadata['api_modules'] = ','.join(unique_modules)
+
+        # 提取权限名
+        permissions = re.findall(r'ohos\.permission\.([\w_]+)', content)
+        if permissions:
+            # 去重并保留前5个
+            unique_perms = list(set(permissions))[:5]
+            metadata['permissions'] = ','.join(unique_perms)
+
+        # 提取接口名
+        interfaces = re.findall(r'(\w+)\s*\(', content)
+        if interfaces:
+            # 统计接口使用频率
+            interface_counts = {}
+            for interface in interfaces:
+                if len(interface) > 3 and interface[0].islower():
+                    interface_counts[interface] = interface_counts.get(interface, 0) + 1
+            # 获取前5个常用接口
+            top_interfaces = sorted(interface_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+            metadata['interfaces'] = ','.join([name for name, _ in top_interfaces])
+
+        # 提取表格信息
+        tables = re.findall(r'\|.*\|.*\|', content)
+        if len(tables) > 3:  # 至少3行才认为是表格
+            metadata['has_tables'] = 'true'
+
+        # 检测文档类型
+        if 'API' in metadata.get('headers', '') or '接口' in metadata.get('title', ''):
+            metadata['doc_type'] = 'api'
+        elif '指南' in metadata.get('title', '') or '开发指南' in metadata.get('title', ''):
+            metadata['doc_type'] = 'guide'
+        elif '术语' in metadata.get('title', '') or '词汇' in metadata.get('title', ''):
+            metadata['doc_type'] = 'glossary'
+        else:
+            metadata['doc_type'] = 'general'
+
         # 从路径推断分类
         if self.docs_root:
             try:
                 relative = file_path.relative_to(self.docs_root)
                 metadata['category'] = str(relative.parent)
+
+                # 推断API级别
+                if 'SystemCapability' in metadata.get('api_modules', ''):
+                    metadata['api_level'] = 'system'
+                elif 'ohos.enterprise' in metadata.get('api_modules', ''):
+                    metadata['api_level'] = 'enterprise'
+                elif 'ohos.app' in metadata.get('api_modules', ''):
+                    metadata['api_level'] = 'application'
             except ValueError:
                 pass
+
+        # 从路径推断Kit（如果适用）
+        path_parts = file_path.parts
+        for i, part in enumerate(path_parts):
+            if 'kit' in part.lower():
+                for j in range(i+1, min(i+3, len(path_parts))):
+                    kit_name = path_parts[j].replace('（', '').replace('）', '')
+                    if 'Kit' in kit_name:
+                        metadata['kit'] = kit_name
+                break
+
+        # 添加业务标签
+        tags = []
+        if 'API' in metadata.get('doc_type', ''):
+            tags.append('api')
+        if metadata.get('permissions'):
+            tags.append('permission')
+        if metadata.get('code_languages'):
+            tags.append('code-example')
+        if tags:
+            metadata['tags'] = ','.join(tags)
 
         return metadata
 

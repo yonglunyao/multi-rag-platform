@@ -73,3 +73,7 @@ global:
 
   # 向量存储路径
   vector_store_path: "./data/vectorstore"
+
+  # 重排序器配置
+  use_reranker: true         # 是否启用重排序器
+  reranker_type: bm25        # 重排序器类型: score_boost, bm25, none

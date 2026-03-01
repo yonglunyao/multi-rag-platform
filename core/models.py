@@ -187,6 +187,8 @@ class GlobalConfig:
     data_root: str = "./data/libraries"
     export_dir: str = "./data/exports"
     vector_store_path: str = "./data/vectorstore"
+    use_reranker: bool = True
+    reranker_type: str = "score_boost"  # score_boost, bm25, none
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -196,6 +198,8 @@ class GlobalConfig:
             "data_root": self.data_root,
             "export_dir": self.export_dir,
             "vector_store_path": self.vector_store_path,
+            "use_reranker": self.use_reranker,
+            "reranker_type": self.reranker_type,
         }
 
     @classmethod
@@ -207,6 +211,8 @@ class GlobalConfig:
             data_root=data.get("data_root", "./data/libraries"),
             export_dir=data.get("export_dir", "./data/exports"),
             vector_store_path=data.get("vector_store_path", "./data/vectorstore"),
+            use_reranker=data.get("use_reranker", True),
+            reranker_type=data.get("reranker_type", "score_boost"),
         )
 
 

@@ -14,6 +14,8 @@ class QueryRequest(BaseModel):
     temperature: float = Field(0.7, description="生成温度", ge=0.0, le=1.0)
     max_tokens: int = Field(2048, description="最大生成token数", ge=100, le=4096)
     filter: Optional[Dict[str, Any]] = Field(None, description="元数据过滤条件")
+    use_llm: bool = Field(True, description="是否使用LLM生成答案（禁用后仅返回检索结果，速度更快）")
+    top_k: int = Field(5, description="返回结果数量", ge=1, le=20)
 
 
 class SourceDocument(BaseModel):

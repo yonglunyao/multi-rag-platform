@@ -86,6 +86,39 @@ async def list_libraries(include_disabled: bool = False):
     )
 
 
+@router.get("/active", response_model=dict)
+async def get_active_library():
+    """
+    获取活动资料库
+
+    Returns:
+        dict: 活动资料库信息
+    """
+    manager = get_library_manager()
+    active_id = manager.get_active_library_id()
+
+    return {"active_library": active_id}
+
+
+@router.post("/active", response_model=MessageResponse)
+async def set_active_library(request: SetActiveRequest):
+    """
+    设置活动资料库
+
+    Args:
+        request: 设置请求
+
+    Returns:
+        MessageResponse: 设置结果
+    """
+    manager = get_library_manager()
+
+    if manager.set_active_library(request.library_id):
+        return MessageResponse(message=f"活动资料库已设置为 {request.library_id}")
+    else:
+        raise HTTPException(status_code=400, detail="设置失败，请检查资料库 ID")
+
+
 @router.get("/{library_id}", response_model=LibraryDetailResponse)
 async def get_library(library_id: str):
     """
@@ -420,39 +453,6 @@ async def export_library(library_id: str, request: ExportRequest):
     except Exception as e:
         logger.error(f"导出失败: {e}")
         raise HTTPException(status_code=500, detail=f"导出失败: {str(e)}")
-
-
-@router.get("/active", response_model=dict)
-async def get_active_library():
-    """
-    获取活动资料库
-
-    Returns:
-        dict: 活动资料库信息
-    """
-    manager = get_library_manager()
-    active_id = manager.get_active_library_id()
-
-    return {"active_library": active_id}
-
-
-@router.post("/active", response_model=MessageResponse)
-async def set_active_library(request: SetActiveRequest):
-    """
-    设置活动资料库
-
-    Args:
-        request: 设置请求
-
-    Returns:
-        MessageResponse: 设置结果
-    """
-    manager = get_library_manager()
-
-    if manager.set_active_library(request.library_id):
-        return MessageResponse(message=f"活动资料库已设置为 {request.library_id}")
-    else:
-        raise HTTPException(status_code=400, detail="设置失败，请检查资料库 ID")
 
 
 @router.get("/exports/{filename}", response_class=FileResponse)

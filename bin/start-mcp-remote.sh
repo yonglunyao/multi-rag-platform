@@ -49,18 +49,16 @@ echo -e "\n${GREEN}========================================${NC}"
 echo -e "${GREEN}服务状态${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo -e "RAG API:       ${GREEN}http://localhost:8000${NC}"
-echo -e "MCP SSE:       ${GREEN}http://$IP:8001/sse${NC}"
-echo -e "健康检查:      ${GREEN}http://$IP:8001/health${NC}"
+echo -e "MCP SSE:       ${GREEN}http://$IP:8002/sse${NC}"
+echo -e "健康检查:      ${GREEN}http://$IP:8002/health${NC}"
 
 echo -e "\n${BLUE}本地 Claude Code 配置 (~/.config/claude-code/mcp_servers.json):${NC}"
 cat << EOF
 {
   "mcpServers": {
-    "harmonyos-rag": {
-      "transport": {
-        "type": "sse",
-        "url": "http://localhost:8001/sse"
-      }
+    "harmonyos-docs-rag": {
+      "type": "sse",
+      "url": "http://localhost:8002/sse"
     }
   }
 }
@@ -70,11 +68,9 @@ echo -e "\n${BLUE}远程 Claude Code 配置:${NC}"
 cat << EOF
 {
   "mcpServers": {
-    "harmonyos-rag": {
-      "transport": {
-        "type": "sse",
-        "url": "http://$IP:8001/sse"
-      }
+    "harmonyos-docs-rag": {
+      "type": "sse",
+      "url": "http://$IP:8002/sse"
     }
   }
 }
@@ -83,7 +79,8 @@ EOF
 echo -e "\n${GREEN}========================================${NC}"
 echo -e "${GREEN}使用方式${NC}"
 echo -e "${GREEN}========================================${NC}"
-echo -e "@query_harmonyos_docs 长时任务需要什么权限"
-echo -e "@query_harmonyos_docs 如何使用 UIAbility"
-echo -e "@query_harmonyos_docs 剪贴板 API 用法"
+echo -e "@rag_query 长时任务需要什么权限"
+echo -e "@rag_query 如何使用 UIAbility"
+echo -e "@rag_query 剪贴板 API 用法"
+echo -e "@list_libraries"
 echo -e ""

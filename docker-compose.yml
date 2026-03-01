@@ -16,12 +16,16 @@ services:
       - ./data:/app/data
       # 挂载环境配置
       - ./.env:/app/.env
+      # 挂载GPU设备
+      - /usr/lib/libnvidia-ml.so.1:/usr/lib/libnvidia-ml.so.1:ro
+    runtime: nvidia
     environment:
       - HOST=0.0.0.0
       - PORT=8000
-      - EMBEDDING_DEVICE=cpu
+      - EMBEDDING_DEVICE=cuda
+      - EMBEDDING_MODEL=BAAI/bge-base-zh-v1.5
       - LIBRARIES_CONFIG_PATH=/app/data/libraries/config.yaml
-      - DEFAULT_LIBRARY=harmonyos
+      - DEFAULT_LIBRARY=harmonyos_full
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
