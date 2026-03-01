@@ -41,6 +41,7 @@ QUERY_TOOL = Tool(
 - query: 查询问题，支持中文自然语言
 - library_id: 资料库 ID（可选，不指定则使用默认资料库）
 - context_length: 返回相关文档数量（默认5，最多10）
+- use_llm: 是否使用 LLM 生成回答（默认true，设为false返回原始检索结果）
 
 示例查询：
 - "长时任务需要什么权限"
@@ -64,6 +65,10 @@ QUERY_TOOL = Tool(
                 "default": 5,
                 "minimum": 1,
                 "maximum": 10
+            },
+            "use_llm": {
+                "type": "boolean",
+                "description": "是否使用 LLM 生成回答，设为 false 返回原始检索结果"
             }
         },
         "required": ["query"]
@@ -106,7 +111,7 @@ LIBRARY_STATS_TOOL = Tool(
 )
 
 
-async def query_rag_api(query: str, context_length: int = 5, library_id: Optional[str] = None) -> dict[str, Any]:
+async def query_rag_api(query: str, context_length: int = 5, library_id: Optional[str] = None, use_llm: bool = True) -> dict[str, Any]:
     """调用 RAG API 查询"""
     try:
         url = f"{RAG_API_BASE_URL}/query"
@@ -119,7 +124,8 @@ async def query_rag_api(query: str, context_length: int = 5, library_id: Optiona
                 json={
                     "query": query,
                     "context_length": context_length,
-                    "temperature": 0.3
+                    "use_llm": use_llm,
+                    "temperature": 0.3 if use_llm else 0
                 }
             )
             response.raise_for_status()
@@ -178,6 +184,7 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         query = arguments.get("query", "")
         library_id = arguments.get("library_id")
         context_length = arguments.get("context_length", 5)
+        use_llm = arguments.get("use_llm", True)
 
         if not query:
             return [TextContent(
@@ -185,7 +192,7 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
                 text="错误：查询问题不能为空"
             )]
 
-        result = await query_rag_api(query, context_length, library_id)
+        result = await query_rag_api(query, context_length, library_id, use_llm)
 
         # 格式化输出
         if "error" in result:
@@ -195,8 +202,13 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
             sources = result.get("sources", [])
 
             lib_info = f" [{library_id}]" if library_id else ""
-            output = f"📚 RAG 文档查询结果{lib_info}\n\n"
-            output += f"📝 回答：\n{answer}\n\n"
+            if use_llm:
+                output = f"📚 RAG 文档查询结果{lib_info}\n\n"
+                output += f"📝 回答：\n{answer}\n\n"
+            else:
+                output = f"📚 RAG 原始检索结果{lib_info}\n\n"
+                output += f"查询: {query}\n"
+                output += f"返回: {len(sources)} 条相关文档\n\n"
 
             if sources:
                 output += f"📑 相关文档来源：\n"
@@ -204,10 +216,14 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
                     file = source.get("file", "Unknown")
                     relevance = source.get("relevance", 0)
                     kit = source.get("kit", "")
+                    category = source.get("category", "")
                     output += f"  {i}. {file}"
                     if kit:
                         output += f" ({kit})"
-                    output += f" - 相关度: {relevance:.2f}\n"
+                    output += f" - 相关度: {relevance:.2f}"
+                    if category:
+                        output += f" [{category}]"
+                    output += "\n"
 
         return [TextContent(type="text", text=output)]
 
