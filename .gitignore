@@ -27,10 +27,13 @@ env/
 data/processed/
 data/vectorstore/
 data/documents/
-data/exports/
+data/exports/backup/
 *.db
 *.sqlite
 permission_index.json
+
+# Allow split backup
+!data/exports/split_backup/
 
 # Models
 models/

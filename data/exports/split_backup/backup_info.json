@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "backup_date": "2026-03-01T20:45:00+08:00",
+  "source_file": "chroma.sqlite3",
+  "source_size_bytes": 4197146624,
+  "source_size_mb": 4002,
+  "part_size": "50M",
+  "part_count": 81,
+  "max_part_size_mb": 50,
+  "description": "ChromaDB vector store split backup for GitHub - HarmonyOS Docs RAG v1.0.0",
+  "library": {
+    "id": "harmonyos_full",
+    "name": "HarmonyOS完整文档",
+    "document_count": 9693,
+    "chunk_count": 85880,
+    "embedding_model": "bge-base-zh-v1.5",
+    "embedding_dimension": 768
+  }
+}
