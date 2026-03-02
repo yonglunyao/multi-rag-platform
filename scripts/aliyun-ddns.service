@@ -1,0 +1,15 @@
+[Unit]
+Description=Aliyun DDNS Update Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/home/mind/workspace/harmony-docs-rag
+ExecStart=/usr/bin/python3 /home/mind/workspace/harmony-docs-rag/scripts/aliyun_ddns.py
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Aliyun DDNS Update Timer
+Requires=aliyun-ddns.service
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+AccuracySec=1
+
+[Install]
+WantedBy=timers.target
