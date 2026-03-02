@@ -9,10 +9,15 @@ import json
 import hmac
 import base64
 import hashlib
+import os
 from datetime import datetime, timezone
 from urllib.parse import quote
 
-# ============= 配置区域 =============
+# ============= 配置文件路径 =============
+CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'aliyun_ddns_config.json')
+# =================================
+
+# ============= 全局变量 =============
 DOMAIN = "m.ohos.asia"          # 完整域名
 SUBDOMAIN = "m"                   # 子域名
 RECORD_ID = ""                    # 记录ID（首次自动获取）
@@ -20,7 +25,6 @@ ACCESS_KEY_ID = ""                # 阿里云 AccessKey ID
 ACCESS_KEY_SECRET = ""            # 阿里云 AccessKey Secret
 REGION = "cn-hangzhou"             # 地域
 TTL = 600                          # DNS 缓存时间（秒）
-CONFIG_FILE = "/root/.aliyun_ddns_config.json"  # 配置文件路径
 # =================================
 
 log_prefix = "[AliyunDDNS]"
@@ -33,7 +37,7 @@ def log(msg):
 
 def load_config():
     """加载配置"""
-    global RECORD_ID, ACCESS_KEY_ID, ACCESS_KEY_SECRET
+    global RECORD_ID, ACCESS_KEY_ID, ACCESS_KEY_SECRET, DOMAIN, SUBDOMAIN, REGION, TTL
 
     try:
         with open(CONFIG_FILE, 'r') as f:
@@ -41,6 +45,10 @@ def load_config():
             RECORD_ID = config.get('record_id', '')
             ACCESS_KEY_ID = config.get('access_key_id', '')
             ACCESS_KEY_SECRET = config.get('access_key_secret', '')
+            DOMAIN = config.get('domain', 'm.ohos.asia')
+            SUBDOMAIN = config.get('subdomain', 'm')
+            REGION = config.get('region', 'cn-hangzhou')
+            TTL = config.get('ttl', 600)
         log("配置已加载")
         return True
     except FileNotFoundError:
@@ -53,7 +61,11 @@ def save_config():
     config = {
         'record_id': RECORD_ID,
         'access_key_id': ACCESS_KEY_ID,
-        'access_key_secret': ACCESS_KEY_SECRET
+        'access_key_secret': ACCESS_KEY_SECRET,
+        'domain': DOMAIN,
+        'subdomain': SUBDOMAIN,
+        'region': REGION,
+        'ttl': TTL
     }
     with open(CONFIG_FILE, 'w') as f:
         json.dump(config, f, indent=2)
@@ -223,6 +235,9 @@ def check_ip_change():
 
 def main():
     """主函数"""
+    # 首先加载配置
+    load_config()
+
     log("="*50)
     log("阿里云 DDNS 动态解析")
     log("="*50)
@@ -236,11 +251,8 @@ def main():
         log("配置步骤:")
         log("1. 访问 https://ram.console.aliyun.com/manage/ak")
         log("2. 创建或查看 AccessKey")
-        log("3. 修改脚本中的 ACCESS_KEY_ID 和 ACCESS_KEY_SECRET")
+        log("3. 编辑 scripts/aliyun_ddns_config.json")
         return
-
-    # 加载配置
-    load_config()
 
     # 检查并更新
     check_ip_change()
